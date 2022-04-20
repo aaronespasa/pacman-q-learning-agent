@@ -1,2 +1,1 @@
-# pacman-practice-2
-👾 ML Practice 2: PacMan With RL
+# 👾 ML Practice 2: PacMan With RL
