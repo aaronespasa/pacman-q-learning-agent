@@ -166,18 +166,27 @@ class QLearningAgent(ReinforcementAgent):
 
         """
         # TRACE for transition and position to update. Comment the following lines if you do not want to see that trace
-#         print("Update Q-table with transition: ", state, action, nextState, reward)
-#         position = self.computePosition(state)
-#         action_column = self.actions[action]
-#         print("Corresponding Q-table cell to update:", position, action_column)
+        #         print("Update Q-table with transition: ", state, action, nextState, reward)
+        #         position = self.computePosition(state)
+        #         action_column = self.actions[action]
+        #         print("Corresponding Q-table cell to update:", position, action_column)
+   
+        # position = self.computePosition(state)
+        # action_column = self.actions[action]
 
-        
-        
-        "*** YOUR CODE HERE ***"
+        # old_q_value = (1 - self.alpha) * self.getQValue(state, action)
+        # if len(self.getLegalActions(state)) == 0: # terminal state
+        #     new_value = self.alpha * reward
+        # else: # non-terminal state
+        #     new_value = self.alpha * \
+        #                  (reward + self.discount * self.computeValueFromQValues(nextState))
+
+        # self.q_table[position][action_column] = old_q_value + new_value
 
         # TRACE for updated q-table. Comment the following lines if you do not want to see that trace
-#         print("Q-table:")
-#         self.printQtable()
+        #         print("Q-table:")
+        #         self.printQtable()
+        pass
 
     def getPolicy(self, state):
         "Return the best action in the qtable for a given state"
@@ -190,7 +199,7 @@ class QLearningAgent(ReinforcementAgent):
 class PacmanQAgent(QLearningAgent):
     "Exactly the same as QLearningAgent, but with different default parameters"
 
-    def __init__(self, epsilon=0.05,gamma=0.8,alpha=0.2, numTraining=0, **args):
+    def __init__(self, epsilon=0.05,gamma=0.8,alpha=0.2, ghostAgents = None, numTraining=0, **args):
         """
         These default parameters can be changed from the pacman.py command line.
         For example, to change the exploration rate, try:
