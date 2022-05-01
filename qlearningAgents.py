@@ -178,8 +178,7 @@ class QLearningAgent(ReinforcementAgent):
 
         # self.q_table[position][action_column] = old_q_value + new_value
 
-        #self.printQtable()
-        pass
+        # self.printQtable()
 
     def getPolicy(self, state):
         "Return the best action in the qtable for a given state"
@@ -224,9 +223,29 @@ class PacmanQAgent(QLearningAgent):
 
         self.writeInitQtable()
 
+    def observationFunction(self, state):
+        """
+            This is where we ended up after our last action.
+            The simulation should somehow ensure this is called
+        """
+        if not self.lastState is None:
+            # if the pacman position is the same than the position of any other ghost: reward = 1
+            # in any other case: reward = 0
+            reward = 0
+            for ghost_position in state.getGhostPositions():
+                if ghost_position == state.getPacmanPosition():
+                    reward = 1
+                    break
+
+            # reward = state.getScore() - self.lastState.getScore()
+            self.observeTransition(self.lastState, self.lastAction, state, reward)
+
+        return state
+
     def computeDiscretizedDistance(self, distance):
         for row_num in range(len(self.distances)):
-            ...
+            if self.distances[row_num][0] <= distance <= self.distances[row_num][1]:
+                return row_num
 
     def computePosition(self, state):
         """
@@ -235,7 +254,7 @@ class PacmanQAgent(QLearningAgent):
         Args:
             state: (x,y) position of the pacman
         """
-        distance =  state.getDistanceNearestGhost()
+        distance = state.getDistanceNearestGhost()
         discrete_distance = self.computeDiscretizedDistance(distance)
         return discrete_distance
 

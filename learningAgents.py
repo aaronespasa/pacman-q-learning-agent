@@ -197,13 +197,16 @@ class ReinforcementAgent(ValueEstimationAgent):
         """
             This is where we ended up after our last action.
             The simulation should somehow ensure this is called
+
+            This method is overwritten in the PacmanQAgent class
+            (you can find it on the qlearningAgents.py file)
         """
+        util.raiseNotDefined()
+        # if not self.lastState is None:
+        #     reward = state.getScore() - self.lastState.getScore()
+        #     self.observeTransition(self.lastState, self.lastAction, state, reward)
 
-        if not self.lastState is None:
-            reward = state.getScore() - self.lastState.getScore()
-            self.observeTransition(self.lastState, self.lastAction, state, reward)
-
-        return state
+        # return state
 
     def registerInitialState(self, state):
         self.startEpisode()
