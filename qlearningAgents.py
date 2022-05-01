@@ -24,8 +24,7 @@ class QLearningAgent(ReinforcementAgent):
         ReinforcementAgent.__init__(self, **args)
 
         self.actions = {"north":0, "east":1, "south":2, "west":3, "exit":4}
-        self.table_file = open("qtable.txt", "r+")
-        #        self.table_file_csv = open("qtable.csv", "r+")        
+        self.table_file = open("qtable.txt", "r+")      
         self.q_table = self.readQtable()
         self.epsilon = 1
 
@@ -49,14 +48,6 @@ class QLearningAgent(ReinforcementAgent):
             for item in line:
                 self.table_file.write(str(item)+" ")
             self.table_file.write("\n")
-
-#         self.table_file_csv.seek(0)
-#         self.table_file_csv.truncate()
-#         for line in self.q_table:
-#             for item in line[:-1]:
-#                 self.table_file_csv.write(str(item)+", ")
-#             self.table_file_csv.write(str(line[-1]))                
-#             self.table_file_csv.write("\n")
 
     def printQtable(self):
         "Print qtable"
@@ -165,18 +156,18 @@ class QLearningAgent(ReinforcementAgent):
         # Positions in the q table (row, column)
         # -> row = distance
         # -> column = action
-        #
-        # position = self.computePosition(state)
-        # action_column = self.actions[action]
+        
+        position = self.computePosition(state)
+        action_column = self.actions[action]
 
-        # old_q_value = (1 - self.alpha) * self.getQValue(state, action)
-        # if len(self.getLegalActions(state)) == 0: # terminal state
-        #     new_value = self.alpha * reward
-        # else: # non-terminal state
-        #     new_value = self.alpha * \
-        #                  (reward + self.discount * self.computeValueFromQValues(nextState))
+        old_q_value = (1 - self.alpha) * self.getQValue(state, action)
+        if len(self.getLegalActions(state)) == 0: # terminal state
+            new_value = self.alpha * reward
+        else: # non-terminal state
+            new_value = self.alpha * \
+                         (reward + self.discount * self.computeValueFromQValues(nextState))
 
-        # self.q_table[position][action_column] = old_q_value + new_value
+        self.q_table[position][action_column] = old_q_value + new_value
 
         # self.printQtable()
 
@@ -209,12 +200,14 @@ class PacmanQAgent(QLearningAgent):
         args['alpha'] = alpha
         args['numTraining'] = numTraining
 
+        self.actions = {"North":0, "East":1, "South":2, "West":3, "Stop":4}
+
         # distance items: [start_distance, final_distance]
         self.distances = [
             [0, 0],
-            [1, 2],
-            [2, 3],
-            [3, 4],
+            [1, 1],
+            [2, 2],
+            [3, 3],
             [4, 20]
         ]
 
