@@ -204,11 +204,11 @@ class PacmanQAgent(QLearningAgent):
 
         # distance items: [start_distance, final_distance]
         self.distances = [
-            [0, 0],
-            [1, 1],
-            [2, 2],
-            [3, 3],
-            [4, 20]
+            [1, 2],
+            [2, 3],
+            [3, 4],
+            [4, 5],
+            [5, 100]
         ]
 
         self.index = 0  # This is always Pacman
@@ -221,14 +221,27 @@ class PacmanQAgent(QLearningAgent):
             This is where we ended up after our last action.
             The simulation should somehow ensure this is called
         """
+        reward = 0
         if not self.lastState is None:
             # if the pacman position is the same than the position of any other ghost: reward = 1
             # in any other case: reward = 0
-            reward = 0
-            for ghost_position in state.getGhostPositions():
+
+            # print("-----------------")
+
+            for ghost_position in self.lastState.getGhostPositions():
+                # get the next action of state
+                # print("Pacman position: " + str(state.getPacmanPosition()))
+                # print("Ghost position: " + str(ghost_position))
+                # print()
+
                 if ghost_position == state.getPacmanPosition():
                     reward = 1
                     break
+            
+            # print("-----------------")
+            
+            if reward == 1:
+                print("reward is 1")
 
             # reward = state.getScore() - self.lastState.getScore()
             self.observeTransition(self.lastState, self.lastAction, state, reward)
@@ -237,8 +250,12 @@ class PacmanQAgent(QLearningAgent):
 
     def computeDiscretizedDistance(self, distance):
         for row_num in range(len(self.distances)):
-            if self.distances[row_num][0] <= distance <= self.distances[row_num][1]:
+            if self.distances[row_num][0] <= distance < self.distances[row_num][1]:
                 return row_num
+        
+        # just in case the distance is greater than the last distance
+        # in other words, distance > self.distances[-1][1]
+        return len(self.distances) - 1
 
     def computePosition(self, state):
         """
@@ -249,6 +266,7 @@ class PacmanQAgent(QLearningAgent):
         """
         distance = state.getDistanceNearestGhost()
         discrete_distance = self.computeDiscretizedDistance(distance)
+        # print("distance: {} -> {}".format(distance, discrete_distance))
         return discrete_distance
 
     def writeInitQtable(self):

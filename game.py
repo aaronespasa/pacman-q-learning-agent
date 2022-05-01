@@ -692,6 +692,16 @@ class Game:
             if _BOINC_ENABLED:
                 boinc.set_fraction_done(self.getProgress())
 
+        # GAME HAS ENDED
+        from qlearningAgents import PacmanQAgent
+
+        pacman_agent = self.agents[0]
+        state = self.state.deepCopy()
+
+        if isinstance(pacman_agent, PacmanQAgent) and state.isWin():
+            pacman_agent.observationFunction(state)
+
+
         # inform a learning agent of the game result
         for agentIndex, agent in enumerate(self.agents):
             if "final" in dir( agent ) :
