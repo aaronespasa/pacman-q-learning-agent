@@ -1,16 +1,28 @@
 from __future__ import print_function
 # bustersAgents.py
 # ----------------
+# Licensing Information:  You are free to use or extend these projects for
+# educational purposes provided that (1) you do not distribute or publish
+# solutions, (2) you retain this notice, and (3) you provide clear
+# attribution to UC Berkeley.
+# 
+# Attribution Information: The Pacman AI projects were developed at UC Berkeley.
+# The core projects and autograders were primarily created by John DeNero
+# (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
+# Student side autograding was added by Brad Miller, Nick Hay, and
+# Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
-from builtins import str
+
 from builtins import range
 from builtins import object
 import util
-from game import Agent
+# from game import Agent
 from game import Directions
 from keyboardAgents import KeyboardAgent
+# from wekaI import Weka
 import inference
 import busters
+import random
 
 class NullGraphics(object):
     "Placeholder for graphics"
@@ -64,6 +76,12 @@ class BustersAgent(object):
         self.inferenceModules = [inferenceType(a) for a in ghostAgents]
         self.observeEnable = observeEnable
         self.elapseTimeEnable = elapseTimeEnable
+        
+        # Variables to perform inference
+        self.countActions = 0
+        self.nearestGhostPosition = tuple()
+        self.nearestGhostDistance = float('inf')
+        self.possibleDirections = 0
 
     def registerInitialState(self, gameState):
         "Initializes beliefs and inference modules"
@@ -82,19 +100,18 @@ class BustersAgent(object):
 
     def getAction(self, gameState):
         "Updates beliefs, then chooses an action based on updated beliefs."
-        for index, inf in enumerate(self.inferenceModules):
-            if not self.firstMove and self.elapseTimeEnable:
-                inf.elapseTime(gameState)
-            self.firstMove = False
-            if self.observeEnable:
-                inf.observeState(gameState)
-            self.ghostBeliefs[index] = inf.getBeliefDistribution()
-        self.display.updateDistributions(self.ghostBeliefs)
         return self.chooseAction(gameState)
 
-    def chooseAction(self, gameState):
-        "By default, a BustersAgent just stops.  This should be overridden."
-        return Directions.STOP
+    def getPossibleDirections(self, legal):
+        possibleDirections = 0
+
+        for direction in legal:
+            if direction == Directions.NORTH: possibleDirections += 8
+            if direction == Directions.SOUTH: possibleDirections += 4
+            if direction == Directions.WEST: possibleDirections += 2
+            if direction == Directions.EAST: possibleDirections += 1
+
+        return possibleDirections
 
 class BustersKeyboardAgent(BustersAgent, KeyboardAgent):
     "An agent controlled by the keyboard that displays beliefs about ghost positions."
@@ -102,12 +119,73 @@ class BustersKeyboardAgent(BustersAgent, KeyboardAgent):
     def __init__(self, index = 0, inference = "KeyboardInference", ghostAgents = None):
         KeyboardAgent.__init__(self, index)
         BustersAgent.__init__(self, index, inference, ghostAgents)
+        self.countActions = 0
+        self.nearestGhostPosition = tuple()
+        self.nearestGhostDistance = float('inf')
+        self.possibleDirections = 0
+        self.directionTaken = ""
+        self.legal = []
 
     def getAction(self, gameState):
         return BustersAgent.getAction(self, gameState)
 
     def chooseAction(self, gameState):
+        livingGhosts = gameState.getLivingGhosts()
+        self.legal = [a for a in gameState.getLegalPacmanActions()]
+        # "{N, S, W, E, X}" -> in binary format
+        self.possibleDirections = self.getPossibleDirections(self.legal)
+        self.countActions = self.countActions + 1
+
+        ####### Sort the ghosts based on the distance to the pacman #######
+        ###################################################################
+        ghostDistancesDict = {}
+        ghostDistances = gameState.data.ghostDistances
+        for i, ghostDistance in enumerate(ghostDistances):
+            # the first "ghost" is the pacman, so we avoid it doing i+1
+            if livingGhosts[i+1] == True:
+                ghostDistancesDict[i] = ghostDistance
+        
+        sortedDistances = dict(sorted(ghostDistancesDict.items(), key=lambda item: item[1]))
+
+        nearestGhostKey = next(iter(sortedDistances)) # get the first element of the dict
+        shortestDistance = sortedDistances[nearestGhostKey]
+        self.nearestGhostDistance = shortestDistance
+        nearestGhostPosition = gameState.getGhostPositions()[nearestGhostKey]
+        self.nearestGhostPosition = nearestGhostPosition
+        ###################################################################
+
         return KeyboardAgent.getAction(self, gameState)
+    
+    def printLineData(self, gameState):
+        # gameState.data.agentStates[0].getDirection()
+        self.futureScore = gameState.getScore()
+        if gameState.data.agentStates[0].getDirection() == "Stop":
+            self.directionTaken = self.legal[0][0]
+        else:
+            self.directionTaken = gameState.data.agentStates[0].getDirection()[0]
+        
+        return (
+            ",".join(str(gameState.getPacmanPosition())[1:-1].split(", ")) + "," +
+            str(self.possibleDirections) + "," +
+            ",".join(str(self.nearestGhostPosition)[1:-1].split(", ")) + "," +
+            str(self.nearestGhostDistance) + "," +
+            str(1) + "," +
+            str(3) + "," +
+            str(gameState.data.layout.width - 1) + "," +
+            str(gameState.data.layout.height - 1) + ","
+        )
+
+    def printFutureData(self, gameState):
+        return (
+            # N: North, S: South, E: East, W: West
+            str(self.directionTaken) + "," +
+            str(gameState.getScore()) + "\n"
+        )
+    def getScoreFromAgent(self, gameState):
+        return gameState.getScore()
+    
+    def getNumAction(self):
+        return self.countActions
 
 from distanceCalculator import Distancer
 from game import Actions
@@ -141,50 +219,10 @@ class RandomPAgent(BustersAgent):
         table = table[:-1]
         return table
         
-    def printLineData(self,gameState):
-    
-        '''Observations of the state
-        
-        print(str(gameState.livingGhosts))
-        print(gameState.data.agentStates[0])
-        print(gameState.getNumFood())
-        print (gameState.getCapsules())
-        width, height = gameState.data.layout.width, gameState.data.layout.height
-        print(width, height)
-        print(gameState.data.ghostDistances)
-        print(gameState.data.layout)'''
-      
-        '''END Observations of the state'''
-        
-        print(gameState)
-        
-        weka_line = ""
-        for i in gameState.livingGhosts:
-            weka_line = weka_line + str(i) + ","
-        weka_line = weka_line + str(gameState.getNumFood()) + "," 
-        for i in gameState.getCapsules():
-            weka_line = weka_line + str(i[0]) + "," + str(i[1]) + ","
-        for i in gameState.data.ghostDistances:
-            weka_line = weka_line + str(i) + ","
-        weka_line = weka_line + str(gameState.data.score) + "," +\
-        str(len(gameState.data.capsules))  + "," + str(self.countFood(gameState)) +\
-        "," + str(gameState.data.agentStates[0].configuration.pos[0]) + "," +\
-        str(gameState.data.agentStates[0].configuration.pos[0])  +\
-        "," + str(gameState.data.agentStates[0].scaredTimer) + "," +\
-        self.printGrid(gameState) + "," +\
-        str(gameState.data.agentStates[0].numReturned) + "," +\
-        str(gameState.data.agentStates[0].getPosition()[0]) + "," +\
-        str(gameState.data.agentStates[0].getPosition()[1])+ "," +\
-        str(gameState.data.agentStates[0].numCarrying)+ "," +\
-        str(gameState.data.agentStates[0].getDirection())
-        print(weka_line)
-        
-        
     def chooseAction(self, gameState):
         move = Directions.STOP
         legal = gameState.getLegalActions(0) ##Legal position from the pacman
         move_random = random.randint(0, 3)
-        self.printLineData(gameState)
         if   ( move_random == 0 ) and Directions.WEST in legal:  move = Directions.WEST
         if   ( move_random == 1 ) and Directions.EAST in legal: move = Directions.EAST
         if   ( move_random == 2 ) and Directions.NORTH in legal:   move = Directions.NORTH
@@ -233,5 +271,157 @@ class GreedyBustersAgent(BustersAgent):
         livingGhostPositionDistributions = \
             [beliefs for i, beliefs in enumerate(self.ghostBeliefs)
              if livingGhosts[i+1]]
-        "*** YOUR CODE HERE ***"
         return Directions.EAST
+
+class BasicAgentAA(BustersAgent):
+
+    def registerInitialState(self, gameState):
+        BustersAgent.registerInitialState(self, gameState)
+        self.distancer = Distancer(gameState.data.layout, False)
+        self.countActions = 0
+        self.nearestGhostPosition = tuple()
+        self.nearestGhostDistance = float('inf')
+        self.possibleDirections = 0
+        self.legal = []
+        
+    ''' Example of counting something'''
+    def countFood(self, gameState):
+        food = 0
+        for width in gameState.data.food:
+            for height in width:
+                if(height == True):
+                    food = food + 1
+        return food
+    
+    ''' Print the layout'''  
+    def printGrid(self, gameState):
+        table = ""
+        #print(gameState.data.layout) ## Print by terminal
+        for x in range(gameState.data.layout.width):
+            for y in range(gameState.data.layout.height):
+                food, walls = gameState.data.food, gameState.data.layout.walls
+                table = table + gameState.data._foodWallStr(food[x][y], walls[x][y]) + ","
+        table = table[:-1]
+        return table
+
+    def printInfo(self, gameState):
+        print("---------------- TICK ", self.countActions, " --------------------------")
+        # Map size
+        width, height = gameState.data.layout.width, gameState.data.layout.height
+        print("Width: ", width, " Height: ", height)
+        # Pacman position
+        print("Pacman position: ", gameState.getPacmanPosition())
+        # Legal actions for Pacman in current position
+        print("Legal actions: ", gameState.getLegalPacmanActions())
+        # Pacman direction
+        print("Pacman direction: ", gameState.data.agentStates[0].getDirection())
+        # Number of ghosts
+        print("Number of ghosts: ", gameState.getNumAgents() - 1)
+        # Alive ghosts (index 0 corresponds to Pacman and is always false)
+        print("Living ghosts: ", gameState.getLivingGhosts())
+        # Ghosts positions
+        print("Ghosts positions: ", gameState.getGhostPositions())
+        # Ghosts directions
+        print("Ghosts directions: ", [gameState.getGhostDirections().get(i) for i in range(0, gameState.getNumAgents() - 1)])
+        # Manhattan distance to ghosts
+        print("Ghosts distances: ", gameState.data.ghostDistances)
+        # Pending pac dots
+        print("Pac dots: ", gameState.getNumFood())
+        # Manhattan distance to the closest pac dot
+        print("Distance nearest pac dots: ", gameState.getDistanceNearestFood())
+        # Map walls
+        print("Map:")
+        print( gameState.getWalls())
+        # Score
+        print("Score: ", gameState.getScore())
+        
+        
+    def chooseAction(self, gameState):
+        pacmanPosition = gameState.getPacmanPosition()
+        self.legal = [a for a in gameState.getLegalPacmanActions()]
+        livingGhosts = gameState.getLivingGhosts()
+        
+        self.possibleDirections = self.getPossibleDirections(self.legal)
+        self.countActions = self.countActions + 1
+
+        ####### Sort the ghosts based on the distance to the pacman #######
+        ###################################################################
+        ghostDistancesDict = {}
+        ghostDistances = gameState.data.ghostDistances
+        for i, ghostDistance in enumerate(ghostDistances):
+            # the first "ghost" is the pacman, so we avoid it doing i+1
+            if livingGhosts[i+1] == True:
+                ghostDistancesDict[i] = ghostDistance
+        
+        sortedDistances = dict(sorted(ghostDistancesDict.items(), key=lambda item: item[1]))
+
+        nearestGhostKey = next(iter(sortedDistances)) # get the first element of the dict
+        shortestDistance = sortedDistances[nearestGhostKey]
+        self.nearestGhostDistance = shortestDistance
+        nearestGhostPosition = gameState.getGhostPositions()[nearestGhostKey]
+        self.nearestGhostPosition = nearestGhostPosition
+        ###################################################################
+        
+
+        #######       Check if the pacman has eaten the ghost       #######
+        ###################################################################
+        if shortestDistance == 0:
+            gameState.setGhostNotLiving(nearestGhostKey)
+            return self.legal[0]
+        ###################################################################
+        
+
+        #######        Check which is the best step to take         #######
+        ###################################################################
+        bestStep = None
+        bestStepValue = float('inf')
+        for step in [Directions.NORTH, Directions.EAST, Directions.SOUTH, Directions.WEST]:
+            if step not in self.legal: continue
+
+            newX, newY = Actions.getSuccessor(pacmanPosition, step)
+            actualDistance = self.distancer.getDistance((newX, newY), nearestGhostPosition)
+
+            if actualDistance < shortestDistance:
+                return step
+
+            # set the best step (this will be used just in the case that the distance from any step
+            # will never be less than the shortestDistance to a ghost)
+            if actualDistance < bestStepValue:
+                bestStepValue = actualDistance
+                bestStep = step
+        ###################################################################
+        
+        # If new distance > shortest distance, take the step that reduces that new distance
+        return bestStep
+
+    def printLineData(self, gameState):
+        self.futureScore = gameState.getScore()
+        if gameState.data.agentStates[0].getDirection() == "Stop":
+            self.directionTaken = self.legal[0][0]
+        else:
+            self.directionTaken = gameState.data.agentStates[0].getDirection()[0]
+        
+        # top left: (1, height-1)
+        # bottom right: (width-1, 3)
+        return (
+            ",".join(str(gameState.getPacmanPosition())[1:-1].split(", ")) + "," +
+            str(self.possibleDirections) + "," +
+            ",".join(str(self.nearestGhostPosition)[1:-1].split(", ")) + "," +
+            str(self.nearestGhostDistance) + "," +
+            str(1) + "," +
+            str(3) + "," +
+            str(gameState.data.layout.width - 1) + "," +
+            str(gameState.data.layout.height - 1) + ","
+        )
+    
+    def printFutureData(self, gameState):
+        return (
+            # N: North, S: South, E: East, W: West
+            str(self.directionTaken) + "," +
+            str(gameState.getScore()) + "\n"
+        )
+    def getScoreFromAgent(self, gameState):
+        return gameState.getScore()
+    
+    def getNumAction(self):
+        return self.countActions

@@ -25,7 +25,7 @@ class QLearningAgent(ReinforcementAgent):
 
         self.actions = {"north":0, "east":1, "south":2, "west":3, "exit":4}
         self.table_file = open("qtable.txt", "r+")
-#        self.table_file_csv = open("qtable.csv", "r+")        
+        #        self.table_file_csv = open("qtable.csv", "r+")        
         self.q_table = self.readQtable()
         self.epsilon = 1
 
@@ -88,7 +88,6 @@ class QLearningAgent(ReinforcementAgent):
 
         return self.q_table[position][action_column]
 
-
     def computeValueFromQValues(self, state):
         """
           Returns max_action Q(state,action)
@@ -144,7 +143,6 @@ class QLearningAgent(ReinforcementAgent):
         if flip:
             return random.choice(legalActions)
         return self.getPolicy(state)
-
 
     def update(self, state, action, nextState, reward):
         """
@@ -212,15 +210,40 @@ class PacmanQAgent(QLearningAgent):
         args['alpha'] = alpha
         args['numTraining'] = numTraining
 
+        # distance items: [start_distance, final_distance]
+        self.distances = [
+            [0, 0],
+            [1, 2],
+            [2, 3],
+            [3, 4],
+            [4, 20]
+        ]
+
         self.index = 0  # This is always Pacman
+        self.ghostNearestDistance = float('inf')
 
         self.writeInitQtable()
+
+    def computeDiscretizedDistance(self, distance):
+        for row_num in range(len(self.distances)):
+            ...
+
+    def computePosition(self, state):
+        """
+        Compute the row of the qtable for a given state.
+
+        Args:
+            state: (x,y) position of the pacman
+        """
+        distance =  state.getDistanceNearestGhost()
+        discrete_distance = self.computeDiscretizedDistance(distance)
+        return discrete_distance
 
     def writeInitQtable(self):
         "Write qtable to disc"
         # initQTable = [[0 for state in range(12*18)] for action in range(5) ]
-        num_actions = len(self.actions) # N, S, E, W, STOP
-        num_discretized_distances = 5 # 0, 1-2, 2-3, 3-4, >4
+        num_actions = len(self.actions)
+        num_discretized_distances = len(self.distances)
 
         with open("qtable.ini.txt", "w", encoding="utf-8") as initTableFile:
             for _ in range(num_discretized_distances):

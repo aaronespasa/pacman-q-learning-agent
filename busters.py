@@ -265,6 +265,13 @@ class GameState(object):
         """
         return self.data.ghostDistances
 
+    ##### Our Own Implementation for Nearest Ghost #
+    def getDistanceNearestGhost(self):
+        # get the position of the nearest ghost
+        # (we check that it is not None to avoid picking the distance to foods)
+        ghostsDistances = [d for d in self.data.ghostDistances if d is not None]
+        return min(ghostsDistances)
+
     #############################################
     #             Helper methods:               #
     # You shouldn't need to call these directly #
