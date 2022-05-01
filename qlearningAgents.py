@@ -58,7 +58,6 @@ class QLearningAgent(ReinforcementAgent):
 #             self.table_file_csv.write(str(line[-1]))                
 #             self.table_file_csv.write("\n")
 
-            
     def printQtable(self):
         "Print qtable"
         for line in self.q_table:
@@ -165,12 +164,10 @@ class QLearningAgent(ReinforcementAgent):
         Q(state,action) <- (1-self.alpha) Q(state,action) + self.alpha * (r + self.discount * max a' Q(nextState, a'))
 
         """
-        # TRACE for transition and position to update. Comment the following lines if you do not want to see that trace
-        #         print("Update Q-table with transition: ", state, action, nextState, reward)
-        #         position = self.computePosition(state)
-        #         action_column = self.actions[action]
-        #         print("Corresponding Q-table cell to update:", position, action_column)
-   
+        # Positions in the q table (row, column)
+        # -> row = distance
+        # -> column = action
+        #
         # position = self.computePosition(state)
         # action_column = self.actions[action]
 
@@ -183,9 +180,7 @@ class QLearningAgent(ReinforcementAgent):
 
         # self.q_table[position][action_column] = old_q_value + new_value
 
-        # TRACE for updated q-table. Comment the following lines if you do not want to see that trace
-        #         print("Q-table:")
-        #         self.printQtable()
+        #self.printQtable()
         pass
 
     def getPolicy(self, state):
@@ -210,12 +205,27 @@ class PacmanQAgent(QLearningAgent):
         gamma    - discount factor
         numTraining - number of training episodes, i.e. no learning after these many episodes
         """
+        QLearningAgent.__init__(self, **args)
+
         args['epsilon'] = epsilon
         args['gamma'] = gamma
         args['alpha'] = alpha
         args['numTraining'] = numTraining
+
         self.index = 0  # This is always Pacman
-        QLearningAgent.__init__(self, **args)
+
+        self.writeInitQtable()
+
+    def writeInitQtable(self):
+        "Write qtable to disc"
+        # initQTable = [[0 for state in range(12*18)] for action in range(5) ]
+        num_actions = len(self.actions) # N, S, E, W, STOP
+        num_discretized_distances = 5 # 0, 1-2, 2-3, 3-4, >4
+
+        with open("qtable.ini.txt", "w", encoding="utf-8") as initTableFile:
+            for _ in range(num_discretized_distances):
+                line = "0.0 " * (num_actions - 1) + "0.0\n"
+                initTableFile.write(line)
 
     def getAction(self, state):
         """
@@ -226,51 +236,3 @@ class PacmanQAgent(QLearningAgent):
         action = QLearningAgent.getAction(self,state)
         self.doAction(state,action)
         return action
-
-
-class ApproximateQAgent(PacmanQAgent):
-    """
-       ApproximateQLearningAgent
-
-       You should only have to overwrite getQValue
-       and update.  All other QLearningAgent functions
-       should work as is.
-    """
-    def __init__(self, extractor='IdentityExtractor', **args):
-        self.featExtractor = util.lookup(extractor, globals())()
-        PacmanQAgent.__init__(self, **args)
-        self.weights = util.Counter()
-
-    def getWeights(self):
-        return self.weights
-
-    def getQValue(self, state, action):
-        """
-          Should return Q(state,action) = w * featureVector
-          where * is the dotProduct operator
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
-    def update(self, state, action, nextState, reward):
-        """
-           Should update your weights based on transition
-        """
-        "*** YOUR CODE HERE ***"
-
-        feats = self.featExtractor.getFeatures(state, action)
-        for f in feats:
-          self.weights[f] = self.weights[f] + self.alpha * feats[f]*((reward + self.discount * self.computeValueFromQValues(nextState)) - self.getQValue(state, action))
-
-        # util.raiseNotDefined()
-
-    def final(self, state):
-        "Called at the end of each game."
-        # call the super-class final method
-        PacmanQAgent.final(self, state)
-
-        # did we finish training?
-        if self.episodesSoFar == self.numTraining:
-            # you might want to print your weights here for debugging
-            "*** YOUR CODE HERE ***"
-            pass
