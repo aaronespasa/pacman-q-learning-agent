@@ -206,9 +206,9 @@ class PacmanQAgent(QLearningAgent):
         self.distances = [
             [1, 2],
             [2, 3],
-            [3, 4],
-            [4, 5],
-            [5, 100]
+            [3, 6],
+            [6, 12],
+            [12, 100]
         ]
 
         self.index = 0  # This is always Pacman
@@ -222,40 +222,66 @@ class PacmanQAgent(QLearningAgent):
             The simulation should somehow ensure this is called
         """
         reward = 0
+        # if state.isWin():
+        #     discrete_distance = 1
+        # else:
+        #     distance = state.getDistanceNearestGhost()
+        #     discrete_distance = self.computeDiscretizedDistance(distance)
+        
         if not self.lastState is None:
+            if state.isWin():
+                discrete_distance = 1
+            else:
+                distance = self.lastState.getDistanceNearestGhost()
+                discrete_distance = self.computeDiscretizedDistance(distance)
             # if the pacman position is the same than the position of any other ghost: reward = 1
             # in any other case: reward = 0
 
             # print("-----------------")
 
-            for ghost_position in self.lastState.getGhostPositions():
-                # get the next action of state
-                # print("Pacman position: " + str(state.getPacmanPosition()))
-                # print("Ghost position: " + str(ghost_position))
-                # print()
+            # for ghost_position in self.lastState.getGhostPositions():
+            #     # get the next action of state
+            #     # print("Pacman position: " + str(state.getPacmanPosition()))
+            #     # print("Ghost position: " + str(ghost_position))
+            #     # print()
 
-                if ghost_position == state.getPacmanPosition():
-                    reward = 1
-                    break
+                # if ghost_position == state.getPacmanPosition():
+                #     reward = 1
+                #     break
             
             # print("-----------------")
             
-            if reward == 1:
-                print("reward is 1")
-
+            # if reward == 1:
+            #     print("reward is 1")
+            if discrete_distance == 1:
+                reward = 5
+            elif discrete_distance == 2:
+                reward = 2
+            elif discrete_distance == 3:
+                reward = 0.5
+            elif discrete_distance == 4:
+                reward = 0.1
+            elif discrete_distance == 5:
+                reward = 0
+            
             # reward = state.getScore() - self.lastState.getScore()
             self.observeTransition(self.lastState, self.lastAction, state, reward)
 
         return state
 
+
+    # def reward(self, state):
+    #     state.getDistanceNearestGhost
+
+
     def computeDiscretizedDistance(self, distance):
-        for row_num in range(len(self.distances)):
-            if self.distances[row_num][0] <= distance < self.distances[row_num][1]:
+        for row_num in range(1, len(self.distances)):
+            if self.distances[row_num-1][0] <= distance < self.distances[row_num-1][1]:
                 return row_num
         
         # just in case the distance is greater than the last distance
         # in other words, distance > self.distances[-1][1]
-        return len(self.distances) - 1
+        return len(self.distances)
 
     def computePosition(self, state):
         """
@@ -264,19 +290,24 @@ class PacmanQAgent(QLearningAgent):
         Args:
             state: (x,y) position of the pacman
         """
+        num_directions = 8
         distance = state.getDistanceNearestGhost()
         discrete_distance = self.computeDiscretizedDistance(distance)
-        # print("distance: {} -> {}".format(distance, discrete_distance))
-        return discrete_distance
+        ghost_direction = state.getDirectionToNearestGhost()
+
+        # print(f"Distance: {discrete_distance}, Direction: {ghost_direction}")
+
+        return (discrete_distance - 1) * num_directions + ghost_direction - 1 
 
     def writeInitQtable(self):
         "Write qtable to disc"
         # initQTable = [[0 for state in range(12*18)] for action in range(5) ]
         num_actions = len(self.actions)
         num_discretized_distances = len(self.distances)
+        num_directions = 8
 
         with open("qtable.ini.txt", "w", encoding="utf-8") as initTableFile:
-            for _ in range(num_discretized_distances):
+            for _ in range(num_discretized_distances * num_directions):
                 line = "0.0 " * (num_actions - 1) + "0.0\n"
                 initTableFile.write(line)
 
