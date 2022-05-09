@@ -279,8 +279,68 @@ class PacmanQAgent(QLearningAgent):
         return state
 
 
-    # def reward(self, state):
-    #     state.getDistanceNearestGhost
+    # def observationFunction(self, state):
+    #     reward = 0
+        
+    #     if not self.lastState is None:
+    #         if state.isWin():
+    #             previous_discrete_distance = 1
+    #             current_discrete_distance = 1
+    #         else:
+    #             previous_distance = self.lastState.getDistanceNearestGhost()
+    #             previous_discrete_distance = self.computeDiscretizedDistance(previous_distance)
+
+    #             current_distance = state.getDistanceNearestGhost()
+    #             current_discrete_distance = self.computeDiscretizedDistance(current_distance)
+        
+    #         if current_discrete_distance < previous_discrete_distance:
+    #             # Si pacman se acerca al fantasma, pasando de un rango de distancias discretizadas a otro menor
+    #             reward += 2
+
+    #             if state.isWin():
+    #                 reward += 5
+
+    #         elif current_discrete_distance == previous_discrete_distance:
+    #             # Si la distancia al fantasma sigue en el mismo rango de distancias discretizadas
+    #             # Puede haberse acercado, si se movio en la direccion correcta
+    #             ghost_direction = state.getDirectionToNearestGhost()
+    #             last_action = self.lastAction   
+    #             # Si el fantasma está al norte
+    #             if (last_action == "North" and ghost_direction == 2):
+    #                 reward += 2
+    #             # Si el fantasma está al sur
+    #             if (last_action == "South" and ghost_direction == 6):
+    #                 reward += 2   
+    #             # Si el fantasma está al este
+    #             if (last_action == "East" and ghost_direction == 8):
+    #                 reward += 2
+    #             # Si el fantasma está al oeste
+    #             if (last_action == "West" and ghost_direction == 4):
+    #                 reward += 2
+
+    #             # Si el fantasma está al noreste y pacman se movio al norte o al este
+    #             if ((ghost_direction == 1) and (last_action == "North" or last_action == "East")):
+    #                 reward += 2
+    #             # Si el fantasma está al sureste y pacman se movio al sur o al este
+    #             if ((ghost_direction == 7) and (last_action == "South" or last_action == "East")):
+    #                 reward += 2
+    #             # Si el fantasma está al noroeste y pacman se movio al norte o al oeste
+    #             if ((ghost_direction == 3) and (last_action == "North" or last_action == "West")):
+    #                 reward += 2
+    #             # Si el fantasma está al suroeste y pacman se movio al sur o al oeste        
+    #             if ((ghost_direction == 5) and (last_action == "South" or last_action == "West")):
+    #                 reward += 2
+    #             else:
+    #             # Si se movio en la direccion equivocada
+    #                 reward -= 1
+            
+    #         elif current_discrete_distance > previous_discrete_distance:
+    #             # Si pacman se aleja del fantasma, pasando de un rango de distancias discretizadas a otro mayor
+    #             reward -= 1
+
+    #         self.observeTransition(self.lastState, self.lastAction, state, reward)
+        
+    #     return state
 
     def computeDiscretizedDistance(self, distance):
         for row_num in range(1, len(self.distances)):
