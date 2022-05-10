@@ -181,8 +181,10 @@ class QLearningAgent(ReinforcementAgent):
 
 class PacmanQAgent(QLearningAgent):
     "Exactly the same as QLearningAgent, but with different default parameters"
+    # pillar la distancia al fantasma más cercano e ir a por el hasta que nos lo comamos
 
-    def __init__(self, epsilon=0.5,gamma=0.8,alpha=0.5, ghostAgents = None, numTraining=0, **args):
+    # fantasmas vivos
+    def __init__(self, epsilon=0.1,gamma=0.7,alpha=0.7, ghostAgents = None, numTraining=0, **args):
         """
         These default parameters can be changed from the pacman.py command line.
         For example, to change the exploration rate, try:
@@ -202,6 +204,8 @@ class PacmanQAgent(QLearningAgent):
 
         self.pacmanPositionLastLast = None
 
+        self.nearestGhostIdx = None
+
         self.actions = {"North":0, "East":1, "South":2, "West":3, "Stop":4}
 
         # distance items: [start_distance, final_distance]
@@ -213,9 +217,6 @@ class PacmanQAgent(QLearningAgent):
             [12, 100]
         ]
 
-        self.index = 0  # This is always Pacman
-        self.ghostNearestDistance = float('inf')
-
         self.writeInitQtable()
     
     def observationFunction(self, state):
@@ -223,124 +224,34 @@ class PacmanQAgent(QLearningAgent):
             This is where we ended up after our last action.
             The simulation should somehow ensure this is called
         """
-        reward = 1
-        # if state.isWin():
-        #     discrete_distance = 1
-        # else:
-        #     distance = state.getDistanceNearestGhost()
-        #     discrete_distance = self.computeDiscretizedDistance(distance)
+        reward = -1
+        actual_distance = 0
+        last_distance = 1
         
         if not self.lastState is None:
-            # if state.isWin():
-            #     discrete_distance = 1
-            # else:
-            #     distance = self.lastState.getDistanceNearestGhost()
-            #     discrete_distance = self.computeDiscretizedDistance(distance)
+            if not state.isWin():
+                # if self.nearestGhostIdx is None or state.getPacmanPosition() in self.lastState.getGhostPositions():
+                #     self.nearestGhostIdx = state.getIdxNearestGhost()
+                actual_distance = state.getDistanceNearestGhost()
+                last_distance = self.lastState.getDistanceNearestGhost()
+                # else:
+                #     actual_distance = state.getDistanceNearestGhost(self.nearestGhostIdx)
+                #     last_distance = self.lastState.getDistanceNearestGhost(self.nearestGhostIdx)
             
-            # if the pacman position is the same than the position of any other ghost: reward = 1
-            # in any other case: reward = 0
-
-            # print("-----------------")
-
-            # for ghost_position in self.lastState.getGhostPositions():
-            #     # get the next action of state
-            #     # print("Pacman position: " + str(state.getPacmanPosition()))
-            #     # print("Ghost position: " + str(ghost_position))
-            #     # print()
-
-                # if ghost_position == state.getPacmanPosition():
-                #     reward = 1
-                #     break
+            if state.getPacmanPosition() == self.lastState.getGhostPositions():
+                reward = 100
+            elif self.pacmanPositionLastLast == state.getPacmanPosition():
+                reward = -10
+            elif actual_distance >= last_distance: # the equal is to avoid the stop
+                reward = -50
+                # print("reward -1\n")
             
-            # print("-----------------")
-            
-            # if reward == 1:
-            #     print("reward is 1")
-            # if discrete_distance == 1:
-            #     reward = 50
-            # elif discrete_distance == 2:
-            #     reward = 12
-            # elif discrete_distance == 3:
-            #     reward = 6
-            # elif discrete_distance == 4:
-            #     reward = 2
-            # elif discrete_distance == 5:
-            #     reward = 1
-
-            # reward = 1
-            if self.pacmanPositionLastLast == state.getPacmanPosition():
-                reward = -1
-
             self.pacmanPositionLastLast = self.lastState.getPacmanPosition()
-
+            # print(f"reward: {reward}")
             # reward = state.getScore() - self.lastState.getScore()
             self.observeTransition(self.lastState, self.lastAction, state, reward)
 
         return state
-
-
-    # def observationFunction(self, state):
-    #     reward = 0
-        
-    #     if not self.lastState is None:
-    #         if state.isWin():
-    #             previous_discrete_distance = 1
-    #             current_discrete_distance = 1
-    #         else:
-    #             previous_distance = self.lastState.getDistanceNearestGhost()
-    #             previous_discrete_distance = self.computeDiscretizedDistance(previous_distance)
-
-    #             current_distance = state.getDistanceNearestGhost()
-    #             current_discrete_distance = self.computeDiscretizedDistance(current_distance)
-        
-    #         if current_discrete_distance < previous_discrete_distance:
-    #             # Si pacman se acerca al fantasma, pasando de un rango de distancias discretizadas a otro menor
-    #             reward += 2
-
-    #             if state.isWin():
-    #                 reward += 5
-
-    #         elif current_discrete_distance == previous_discrete_distance:
-    #             # Si la distancia al fantasma sigue en el mismo rango de distancias discretizadas
-    #             # Puede haberse acercado, si se movio en la direccion correcta
-    #             ghost_direction = state.getDirectionToNearestGhost()
-    #             last_action = self.lastAction   
-    #             # Si el fantasma está al norte
-    #             if (last_action == "North" and ghost_direction == 2):
-    #                 reward += 2
-    #             # Si el fantasma está al sur
-    #             if (last_action == "South" and ghost_direction == 6):
-    #                 reward += 2   
-    #             # Si el fantasma está al este
-    #             if (last_action == "East" and ghost_direction == 8):
-    #                 reward += 2
-    #             # Si el fantasma está al oeste
-    #             if (last_action == "West" and ghost_direction == 4):
-    #                 reward += 2
-
-    #             # Si el fantasma está al noreste y pacman se movio al norte o al este
-    #             if ((ghost_direction == 1) and (last_action == "North" or last_action == "East")):
-    #                 reward += 2
-    #             # Si el fantasma está al sureste y pacman se movio al sur o al este
-    #             if ((ghost_direction == 7) and (last_action == "South" or last_action == "East")):
-    #                 reward += 2
-    #             # Si el fantasma está al noroeste y pacman se movio al norte o al oeste
-    #             if ((ghost_direction == 3) and (last_action == "North" or last_action == "West")):
-    #                 reward += 2
-    #             # Si el fantasma está al suroeste y pacman se movio al sur o al oeste        
-    #             if ((ghost_direction == 5) and (last_action == "South" or last_action == "West")):
-    #                 reward += 2
-    #             else:
-    #             # Si se movio en la direccion equivocada
-    #                 reward -= 1
-            
-    #         elif current_discrete_distance > previous_discrete_distance:
-    #             # Si pacman se aleja del fantasma, pasando de un rango de distancias discretizadas a otro mayor
-    #             reward -= 1
-
-    #         self.observeTransition(self.lastState, self.lastAction, state, reward)
-        
-    #     return state
 
     def computeDiscretizedDistance(self, distance):
         for row_num in range(1, len(self.distances)):
@@ -359,34 +270,39 @@ class PacmanQAgent(QLearningAgent):
             state: (x,y) position of the pacman
         """
         num_directions = 8
-        # distance = state.getDistanceNearestGhost()
-        # discrete_distance = self.computeDiscretizedDistance(distance)
-        ghost_direction = state.getDirectionToNearestGhost()
-        legalActions = state.getLegalActions()
+        ghost_direction = state.getDirectionToNearestGhost(self.nearestGhostIdx)
+        # legalActions = state.getLegalActions()
 
         # we assume there will be always at least one legal action
-        value = 0
-        for action in legalActions:
-            if action == 'North':
-                value += 1
-            elif action == 'South':
-                value += 2
-            elif action == 'East':
-                value += 4
-            elif action == 'West':
-                value += 8
+        # value = 0
+        # for action in legalActions:
+        #     if action == 'North':
+        #         value += 1
+        #     elif action == 'South':
+        #         value += 2
+        #     elif action == 'East':
+        #         value += 4
+        #     elif action == 'West':
+        #         value += 8
         
-        # print(f"Distance: {discrete_distance}, Direction: {ghost_direction}")
+        # directions = {
+        #     "N": 1,
+        #     "W": 2,
+        #     "S": 3,
+        #     "E": 4
+        # }
 
-        # Maximum values:
-        # discrete_distance_max = len(self.distances) = 5 -> d - 1 = 4
-        # (d - 1) * num_directions = 4 * 8 = 32
-        # 32 + 8 - 1 = 39
-        
-        # distance_direction = (discrete_distance - 1) * num_directions + ghost_direction - 1
-        # return (value - 1 ) * 40 + distance_direction
-        # direction = num_directions + ghost_direction - 1
-        return (value - 1) * num_directions + ghost_direction - 1 # 112 + 8 - 1 = 119
+        # print(list(directions.keys())[ghost_direction - 1])
+        # print(state.widthHeightOfMap())
+        # pacmanPosition = state.getPacmanPosition()
+        # return pacmanPosition[0] * 16 + pacmanPosition[1]
+        # living_value = 0
+        # for livingGhost in state.livingGhosts[1:]:
+        #     if livingGhost == True:
+        #         living_value += 1
+
+        # return (value - 1) * num_directions + ghost_direction - 1 # 112 + 8 - 1 = 119
+        return ghost_direction - 1
         
     def writeInitQtable(self):
         "Write qtable to disc"
@@ -394,10 +310,11 @@ class PacmanQAgent(QLearningAgent):
         num_actions = len(self.actions)
         #num_discretized_distances = len(self.distances)
         num_legal_actions = 15
-        num_directions = 8
+        num_directions = 4
+        num_living_ghosts = 5
 
         with open("qtable.ini.txt", "w", encoding="utf-8") as initTableFile:
-            for _ in range(num_legal_actions * num_directions):
+            for _ in range(num_directions):
                 line = "0.0 " * (num_actions - 1) + "0.0\n"
                 initTableFile.write(line)
 

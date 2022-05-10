@@ -259,56 +259,90 @@ class GameState(object):
     def isWin( self ):
         return self.livingGhosts.count(True) == 0
 
+    def widthHeightOfMap(self):
+        return self.data.layout.width, self.data.layout.height
+
     def getNoisyGhostDistances(self):
         """
         Returns a noisy distance to each ghost.
         """
         return self.data.ghostDistances
 
+    def getIdxNearestGhost(self):
+        ghostsDistances = [d for d in self.data.ghostDistances if d is not None]
+        nearestGhost = min(ghostsDistances)
+
+        return ghostsDistances.index(nearestGhost)
+
     ##### Our Own Implementation for Nearest Ghost #
-    def getDistanceNearestGhost(self):
+    def getDistanceNearestGhost(self, idx=None):
         # get the position of the nearest ghost
         # (we check that it is not None to avoid picking the distance to foods)
         ghostsDistances = [d for d in self.data.ghostDistances if d is not None]
-        # if ghostsDistances:
-        return min(ghostsDistances)
+        # print(ghostsDistances)
+
+        if idx is None:
+            # if ghostsDistances:
+            return min(ghostsDistances)
+        else:
+            return ghostsDistances[idx]
+
         # return 0
     
-    def getDirectionToNearestGhost(self):
+    def getDirectionToNearestGhost(self, idx=None):
+        # directions = {
+        #     "NE" : 1, # North-East
+        #     "NN": 2, # North
+        #     "NW": 3, # North-West
+        #     "WW": 4, # West
+        #     "SW": 5, # South-West
+        #     "SS": 6, # South
+        #     "SE": 7, # South-East
+        #     "EE": 8  # East
+        # }
         directions = {
-            "NE" : 1, # North-East
-            "NN": 2, # North
-            "NW": 3, # North-West
-            "WW": 4, # West
-            "SW": 5, # South-West
-            "SS": 6, # South
-            "SE": 7, # South-East
-            "EE": 8  # East
+            "N": 1,
+            "E": 2,
+            "S": 3,
+            "W": 4
         }
-        ghostIdx = self.data.ghostDistances.index(self.getDistanceNearestGhost())
+        ghostIdx = self.data.ghostDistances.index(self.getDistanceNearestGhost(idx))
         ghostPosition = self.getGhostPosition(ghostIdx + 1)
         pacmanPosition = self.getPacmanPosition()
 
+        x = ghostPosition[0] - pacmanPosition[0]
+        y = ghostPosition[1] - pacmanPosition[1]
+
+        if(x > y): # move in the x axis -> west or east
+            if(x > 0): # move east
+                return directions["E"]
+            return directions["W"]
+        else: # move in the y axis -> north or south
+            if(y > 0): # move north
+                return directions["N"]
+            return directions["S"]
+
+
         # get in which direction is ghostPosition with respect to the pacmanPosition
-        if ghostPosition[0] > pacmanPosition[0]: # East
-            if ghostPosition[1] > pacmanPosition[1]: # North-East
-                return directions["NE"]
-            elif ghostPosition[1] < pacmanPosition[1]: # South-East
-                return directions["SE"]
-            else: # ghostY == pacmanY
-                return directions["EE"] # East
-        elif ghostPosition[0] < pacmanPosition[0]: # West
-            if ghostPosition[1] > pacmanPosition[1]: # North-West
-                return directions["NW"]
-            elif ghostPosition[1] < pacmanPosition[1]: # South-West
-                return directions["SW"]
-            else: # ghostY == pacmanY
-                return directions["WW"] # West
-        else: # ghostX == pacmanX
-            if ghostPosition[1] > pacmanPosition[1]: # North
-                return directions["NN"]
-            elif ghostPosition[1] < pacmanPosition[1]: # South
-                return directions["SS"]
+        # if ghostPosition[0] > pacmanPosition[0]: # East
+        #     if ghostPosition[1] > pacmanPosition[1]: # North-East
+        #         return directions["NE"]
+        #     elif ghostPosition[1] < pacmanPosition[1]: # South-East
+        #         return directions["SE"]
+        #     else: # ghostY == pacmanY
+        #         return directions["EE"] # East
+        # elif ghostPosition[0] < pacmanPosition[0]: # West
+        #     if ghostPosition[1] > pacmanPosition[1]: # North-West
+        #         return directions["NW"]
+        #     elif ghostPosition[1] < pacmanPosition[1]: # South-West
+        #         return directions["SW"]
+        #     else: # ghostY == pacmanY
+        #         return directions["WW"] # West
+        # else: # ghostX == pacmanX
+        #     if ghostPosition[1] > pacmanPosition[1]: # North
+        #         return directions["NN"]
+        #     elif ghostPosition[1] < pacmanPosition[1]: # South
+        #         return directions["SS"]
 
 
     #############################################
