@@ -129,11 +129,11 @@ class QLearningAgent(ReinforcementAgent):
         if len(legalActions) == 0:
              return action
         
-        # flip = util.flipCoin(self.epsilon)
+        flip = util.flipCoin(self.epsilon)
 
-        # if flip:
-        #     return random.choice(legalActions)
-        print("not random")
+        if flip:
+            return random.choice(legalActions)
+
         return self.getPolicy(state)
 
     def update(self, state, action, nextState, reward):
@@ -200,6 +200,8 @@ class PacmanQAgent(QLearningAgent):
         args['gamma'] = gamma
         args['alpha'] = alpha
         args['numTraining'] = numTraining
+
+        self.epsilon = epsilon
 
         self.pacmanPositionLastLast = None
         self.lastLastAction = None
