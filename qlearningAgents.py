@@ -49,11 +49,11 @@ class QLearningAgent(ReinforcementAgent):
                 self.table_file.write(str(item)+" ")
             self.table_file.write("\n")
 
-    def printQtable(self):
-        "Print qtable"
-        for line in self.q_table:
-            print(line)
-        print("\n")    
+    # def printQtable(self):
+    #     "Print qtable"
+    #     for line in self.q_table:
+    #         print(line)
+    #     print("\n")    
             
     def __del__(self):
         "Destructor. Invokation at the end of each episode"
@@ -110,7 +110,7 @@ class QLearningAgent(ReinforcementAgent):
             if value > best_value:
                 best_actions = [action]
                 best_value = value
-
+        
         return random.choice(best_actions)
 
     def getAction(self, state):
@@ -125,14 +125,15 @@ class QLearningAgent(ReinforcementAgent):
         # Pick Action
         legalActions = self.getLegalActions(state)
         action = None
-
+        
         if len(legalActions) == 0:
              return action
+        
+        # flip = util.flipCoin(self.epsilon)
 
-        flip = util.flipCoin(self.epsilon)
-
-        if flip:
-            return random.choice(legalActions)
+        # if flip:
+        #     return random.choice(legalActions)
+        print("not random")
         return self.getPolicy(state)
 
     def update(self, state, action, nextState, reward):
@@ -169,8 +170,6 @@ class QLearningAgent(ReinforcementAgent):
 
         self.q_table[position][action_column] = old_q_value + new_value
 
-        # self.printQtable()
-
     def getPolicy(self, state):
         "Return the best action in the qtable for a given state"
         return self.computeActionFromQValues(state)
@@ -184,7 +183,7 @@ class PacmanQAgent(QLearningAgent):
     # pillar la distancia al fantasma más cercano e ir a por el hasta que nos lo comamos
 
     # fantasmas vivos
-    def __init__(self, epsilon=0.1,gamma=0.7,alpha=0.7, ghostAgents = None, numTraining=0, **args):
+    def __init__(self, epsilon=0,gamma=0.8,alpha=0.5, ghostAgents = None, numTraining=0, **args):
         """
         These default parameters can be changed from the pacman.py command line.
         For example, to change the exploration rate, try:
@@ -203,6 +202,7 @@ class PacmanQAgent(QLearningAgent):
         args['numTraining'] = numTraining
 
         self.pacmanPositionLastLast = None
+        self.lastLastAction = None
 
         self.nearestGhostIdx = None
 
@@ -218,13 +218,37 @@ class PacmanQAgent(QLearningAgent):
         ]
 
         self.writeInitQtable()
-    
+
+    def computeReward(self, state):
+        "Compute the reward for a given state"
+
+        if state.getScore() - self.lastState.getScore() == 199:
+            return 30
+        
+        if (self.lastLastAction == "North" and self.lastAction == "South") \
+            or (self.lastLastAction == "South" and self.lastAction == "North") \
+            or (self.lastLastAction == "West" and self.lastAction == "East") \
+            or (self.lastLastAction == "East" and self.lastAction == "West"):
+            # we are going back to the same direction
+            return -5
+        
+        if self.lastAction == "Stop":
+            return -10
+        
+        min_distance_idx = state.getIdxNearestGhost()
+
+        if state.getDistanceNearestGhost(min_distance_idx) >= \
+           self.lastState.getDistanceNearestGhost(min_distance_idx):
+            return -3
+        
+        return -1
+
     def observationFunction(self, state):
         """
             This is where we ended up after our last action.
             The simulation should somehow ensure this is called
         """
-        reward = -1
+        reward = 10
         actual_distance = 0
         last_distance = 1
         
@@ -232,35 +256,43 @@ class PacmanQAgent(QLearningAgent):
             if not state.isWin():
                 # if self.nearestGhostIdx is None or state.getPacmanPosition() in self.lastState.getGhostPositions():
                 #     self.nearestGhostIdx = state.getIdxNearestGhost()
-                actual_distance = state.getDistanceNearestGhost()
-                last_distance = self.lastState.getDistanceNearestGhost()
+                # actual_distance = state.getDistanceNearestGhost()
+                # last_distance = self.lastState.getDistanceNearestGhost()
                 # else:
                 #     actual_distance = state.getDistanceNearestGhost(self.nearestGhostIdx)
                 #     last_distance = self.lastState.getDistanceNearestGhost(self.nearestGhostIdx)
             
-            if state.getPacmanPosition() == self.lastState.getGhostPositions():
-                reward = 100
-            elif self.pacmanPositionLastLast == state.getPacmanPosition():
-                reward = -10
-            elif actual_distance >= last_distance: # the equal is to avoid the stop
-                reward = -50
+            # if state.getPacmanPosition() == self.lastState.getGhostPositions():
+            #     reward = 100
+            # elif self.pacmanPositionLastLast == state.getPacmanPosition(): # avoids loops
+            #     reward = -10
+            # elif actual_distance >= last_distance: # the equal is to avoid the stop
+            #     reward = -50
                 # print("reward -1\n")
+                reward = self.computeReward(state)
+            else:
+                reward = 30
+            
+            # if reward == 100:
+            #     print("\nGhost eaten! 🎉")
             
             self.pacmanPositionLastLast = self.lastState.getPacmanPosition()
+            self.lastLastAction = self.lastAction
+            # print(reward)
             # print(f"reward: {reward}")
             # reward = state.getScore() - self.lastState.getScore()
             self.observeTransition(self.lastState, self.lastAction, state, reward)
 
         return state
 
-    def computeDiscretizedDistance(self, distance):
-        for row_num in range(1, len(self.distances)):
-            if self.distances[row_num-1][0] <= distance < self.distances[row_num-1][1]:
-                return row_num
+    # def computeDiscretizedDistance(self, distance):
+    #     for row_num in range(1, len(self.distances)):
+    #         if self.distances[row_num-1][0] <= distance < self.distances[row_num-1][1]:
+    #             return row_num
         
-        # just in case the distance is greater than the last distance
-        # in other words, distance > self.distances[-1][1]
-        return len(self.distances)
+    #     # just in case the distance is greater than the last distance
+    #     # in other words, distance > self.distances[-1][1]
+    #     return len(self.distances)
 
     def computePosition(self, state):
         """
@@ -269,7 +301,7 @@ class PacmanQAgent(QLearningAgent):
         Args:
             state: (x,y) position of the pacman
         """
-        num_directions = 8
+        num_directions = 4
         ghost_direction = state.getDirectionToNearestGhost(self.nearestGhostIdx)
         # legalActions = state.getLegalActions()
 
@@ -302,6 +334,7 @@ class PacmanQAgent(QLearningAgent):
         #         living_value += 1
 
         # return (value - 1) * num_directions + ghost_direction - 1 # 112 + 8 - 1 = 119
+        
         return ghost_direction - 1
         
     def writeInitQtable(self):
