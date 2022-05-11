@@ -183,7 +183,7 @@ class PacmanQAgent(QLearningAgent):
     # pillar la distancia al fantasma más cercano e ir a por el hasta que nos lo comamos
 
     # fantasmas vivos
-    def __init__(self, epsilon=0,gamma=0.8,alpha=0.5, ghostAgents = None, numTraining=0, **args):
+    def __init__(self, epsilon=0.5,gamma=0.8,alpha=0.5, ghostAgents = None, numTraining=0, **args):
         """
         These default parameters can be changed from the pacman.py command line.
         For example, to change the exploration rate, try:
@@ -305,19 +305,19 @@ class PacmanQAgent(QLearningAgent):
         """
         num_directions = 4
         ghost_direction = state.getDirectionToNearestGhost(self.nearestGhostIdx)
-        # legalActions = state.getLegalActions()
 
+        legalActions = state.getLegalActions()
         # we assume there will be always at least one legal action
-        # value = 0
-        # for action in legalActions:
-        #     if action == 'North':
-        #         value += 1
-        #     elif action == 'South':
-        #         value += 2
-        #     elif action == 'East':
-        #         value += 4
-        #     elif action == 'West':
-        #         value += 8
+        value = 0
+        for action in legalActions:
+            if action == 'North':
+                value += 1
+            elif action == 'South':
+                value += 2
+            elif action == 'East':
+                value += 4
+            elif action == 'West':
+                value += 8
         
         # directions = {
         #     "N": 1,
@@ -335,9 +335,9 @@ class PacmanQAgent(QLearningAgent):
         #     if livingGhost == True:
         #         living_value += 1
 
-        # return (value - 1) * num_directions + ghost_direction - 1 # 112 + 8 - 1 = 119
+        return (value - 1) * num_directions + ghost_direction - 1 # 112 + 8 - 1 = 119
         
-        return ghost_direction - 1
+        # return ghost_direction - 1
         
     def writeInitQtable(self):
         "Write qtable to disc"
@@ -349,7 +349,8 @@ class PacmanQAgent(QLearningAgent):
         num_living_ghosts = 5
 
         with open("qtable.ini.txt", "w", encoding="utf-8") as initTableFile:
-            for _ in range(num_directions):
+            for _ in range(num_directions * num_legal_actions):
+            # for _ in range(num_directions):
                 line = "0.0 " * (num_actions - 1) + "0.0\n"
                 initTableFile.write(line)
 
