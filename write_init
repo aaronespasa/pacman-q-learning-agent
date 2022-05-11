@@ -7,7 +7,7 @@ if __name__ == "__main__":
     print('Number of Trues: ', sum(l))
 
     with open("qtable.txt", "w", encoding="utf-8") as initTableFile:
-        for _ in range(8 * 16 * 4):
+        for _ in range(8 * 16):
             line = "0.0 0.0 0.0 0.0 0.0\n"
             initTableFile.write(line)
 

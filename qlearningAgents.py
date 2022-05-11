@@ -186,7 +186,7 @@ class PacmanQAgent(QLearningAgent):
     # pillar la distancia al fantasma más cercano e ir a por el hasta que nos lo comamos
 
     # fantasmas vivos
-    def __init__(self, epsilon=0.01, gamma=0.8, alpha=0.0, ghostAgents = None, numTraining=0, **args):
+    def __init__(self, epsilon=0.5, gamma=0.8, alpha=0.5, ghostAgents = None, numTraining=0, **args):
         """
         These default parameters can be changed from the pacman.py command line.
         For example, to change the exploration rate, try:
@@ -237,7 +237,7 @@ class PacmanQAgent(QLearningAgent):
 
             # Reward Ghost Eaten
             # if state.isWin() or state.getPacmanPosition() in self.lastState.getGhostPositions(): reward = 30
-            if (state.getScore() == self.lastState.getScore() + 190) or state.isWin(): reward = 30
+            if (state.getScore() == self.lastState.getScore() + 199) or state.isWin(): reward = 30
             
             # Reward Food Eaten
             elif state.getNumFood() < self.lastState.getNumFood(): reward = 15
@@ -250,10 +250,6 @@ class PacmanQAgent(QLearningAgent):
             elif self.lastAction == 'Stop': reward = -10
             elif actual_distance > last_distance: reward = -5
             
-            #Update Action
-            #self.lastlastAction = self.lastAction
-            self.pacmanPositionLastLast = self.lastState.getPacmanPosition()
-
             # Make Action
             self.observeTransition(self.lastState, self.lastAction, state, reward)
 
@@ -274,7 +270,7 @@ class PacmanQAgent(QLearningAgent):
         state: ghost_direction_relative; number of living ghosts; legal actions booleans.
         """
         ghost_direction = state.getDirectionToNearestGhost() - 1
-        n_living = sum(state.getLivingGhosts()) - 1
+        # n_living = sum(state.getLivingGhosts()) - 1
         legal = -1
         for l in state.getLegalActions(): 
             if l == 'North': legal += 1
@@ -282,7 +278,8 @@ class PacmanQAgent(QLearningAgent):
             if l == 'East': legal += 4
             if l == 'West': legal += 8
      
-        return 8*16 * n_living + (8 * legal + ghost_direction)
+        #return 8*16 * n_living + (8 * legal + ghost_direction)
+        return 8 * legal + ghost_direction
         
     def writeInitQtable(self):
         "Write qtable to disc"
@@ -305,5 +302,7 @@ class PacmanQAgent(QLearningAgent):
         method.
         """
         action = QLearningAgent.getAction(self,state)
+        #Update Position
+        if self.lastState: self.pacmanPositionLastLast = self.lastState.getPacmanPosition()
         self.doAction(state,action)
         return action
