@@ -2,6 +2,8 @@
 # ------------------
 
 from game import *
+from game import Actions  
+
 from learningAgents import ReinforcementAgent
 from featureExtractors import *
 
@@ -184,7 +186,7 @@ class PacmanQAgent(QLearningAgent):
     # pillar la distancia al fantasma más cercano e ir a por el hasta que nos lo comamos
 
     # fantasmas vivos
-    def __init__(self, epsilon=0.1,gamma=0.7,alpha=0.7, ghostAgents = None, numTraining=0, **args):
+    def __init__(self, epsilon=0.01, gamma=0.8, alpha=0.0, ghostAgents = None, numTraining=0, **args):
         """
         These default parameters can be changed from the pacman.py command line.
         For example, to change the exploration rate, try:
@@ -202,9 +204,11 @@ class PacmanQAgent(QLearningAgent):
         args['alpha'] = alpha
         args['numTraining'] = numTraining
 
-        self.pacmanPositionLastLast = None
+        self.epsilon = epsilon
 
-        self.nearestGhostIdx = None
+        print(f"epsilon{epsilon}; gamma{gamma}; alpha{alpha}")
+        self.pacmanPositionLastLast = None
+        self.lastlastAction = None
 
         self.actions = {"North":0, "East":1, "South":2, "West":3, "Stop":4}
 
@@ -224,31 +228,33 @@ class PacmanQAgent(QLearningAgent):
             This is where we ended up after our last action.
             The simulation should somehow ensure this is called
         """
-        reward = -1
-        actual_distance = 0
-        last_distance = 1
-        
+        # Avoid long paths
+        reward = -1       
         if not self.lastState is None:
-            if not state.isWin():
-                # if self.nearestGhostIdx is None or state.getPacmanPosition() in self.lastState.getGhostPositions():
-                #     self.nearestGhostIdx = state.getIdxNearestGhost()
+            if not state.isWin():              
                 actual_distance = state.getDistanceNearestGhost()
                 last_distance = self.lastState.getDistanceNearestGhost()
-                # else:
-                #     actual_distance = state.getDistanceNearestGhost(self.nearestGhostIdx)
-                #     last_distance = self.lastState.getDistanceNearestGhost(self.nearestGhostIdx)
+
+            # Reward Ghost Eaten
+            # if state.isWin() or state.getPacmanPosition() in self.lastState.getGhostPositions(): reward = 30
+            if (state.getScore() == self.lastState.getScore() + 190) or state.isWin(): reward = 30
             
-            if state.getPacmanPosition() == self.lastState.getGhostPositions():
-                reward = 100
-            elif self.pacmanPositionLastLast == state.getPacmanPosition():
-                reward = -10
-            elif actual_distance >= last_distance: # the equal is to avoid the stop
-                reward = -50
-                # print("reward -1\n")
+            # Reward Food Eaten
+            elif state.getNumFood() < self.lastState.getNumFood(): reward = 15
+
+            # Punish Loop 
+            elif state.getPacmanPosition() == self.pacmanPositionLastLast : reward = -15 
+            #elif self.lastAction == Actions.reverseDirection(self.lastlastAction): reward = -15
+
+            # Punish actions that go backwards and stop
+            elif self.lastAction == 'Stop': reward = -10
+            elif actual_distance > last_distance: reward = -5
             
+            #Update Action
+            #self.lastlastAction = self.lastAction
             self.pacmanPositionLastLast = self.lastState.getPacmanPosition()
-            # print(f"reward: {reward}")
-            # reward = state.getScore() - self.lastState.getScore()
+
+            # Make Action
             self.observeTransition(self.lastState, self.lastAction, state, reward)
 
         return state
@@ -265,44 +271,18 @@ class PacmanQAgent(QLearningAgent):
     def computePosition(self, state):
         """
         Compute the row of the qtable for a given state.
-
-        Args:
-            state: (x,y) position of the pacman
+        state: ghost_direction_relative; number of living ghosts; legal actions booleans.
         """
-        num_directions = 8
-        ghost_direction = state.getDirectionToNearestGhost(self.nearestGhostIdx)
-        # legalActions = state.getLegalActions()
-
-        # we assume there will be always at least one legal action
-        # value = 0
-        # for action in legalActions:
-        #     if action == 'North':
-        #         value += 1
-        #     elif action == 'South':
-        #         value += 2
-        #     elif action == 'East':
-        #         value += 4
-        #     elif action == 'West':
-        #         value += 8
-        
-        # directions = {
-        #     "N": 1,
-        #     "W": 2,
-        #     "S": 3,
-        #     "E": 4
-        # }
-
-        # print(list(directions.keys())[ghost_direction - 1])
-        # print(state.widthHeightOfMap())
-        # pacmanPosition = state.getPacmanPosition()
-        # return pacmanPosition[0] * 16 + pacmanPosition[1]
-        # living_value = 0
-        # for livingGhost in state.livingGhosts[1:]:
-        #     if livingGhost == True:
-        #         living_value += 1
-
-        # return (value - 1) * num_directions + ghost_direction - 1 # 112 + 8 - 1 = 119
-        return ghost_direction - 1
+        ghost_direction = state.getDirectionToNearestGhost() - 1
+        n_living = sum(state.getLivingGhosts()) - 1
+        legal = -1
+        for l in state.getLegalActions(): 
+            if l == 'North': legal += 1
+            if l == 'South': legal += 2
+            if l == 'East': legal += 4
+            if l == 'West': legal += 8
+     
+        return 8*16 * n_living + (8 * legal + ghost_direction)
         
     def writeInitQtable(self):
         "Write qtable to disc"
@@ -310,11 +290,11 @@ class PacmanQAgent(QLearningAgent):
         num_actions = len(self.actions)
         #num_discretized_distances = len(self.distances)
         num_legal_actions = 15
-        num_directions = 4
-        num_living_ghosts = 5
+        num_directions = 8
+        num_living_ghosts = 4
 
         with open("qtable.ini.txt", "w", encoding="utf-8") as initTableFile:
-            for _ in range(num_directions):
+            for _ in range(num_directions + 8 * num_legal_actions + 8*16*num_living_ghosts):
                 line = "0.0 " * (num_actions - 1) + "0.0\n"
                 initTableFile.write(line)
 

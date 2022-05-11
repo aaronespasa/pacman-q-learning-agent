@@ -700,7 +700,7 @@ class Game:
 
         if isinstance(pacman_agent, PacmanQAgent) and state.isWin():
             pacman_agent.observationFunction(state)
-
+        
 
         # inform a learning agent of the game result
         for agentIndex, agent in enumerate(self.agents):

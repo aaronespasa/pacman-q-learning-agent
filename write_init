@@ -1,0 +1,15 @@
+if __name__ == "__main__":
+    num_legal_actions = 15
+    num_directions = 8
+    num_living_ghosts = 4
+
+    l = [False, True, True, True, False]
+    print('Number of Trues: ', sum(l))
+
+    with open("qtable.txt", "w", encoding="utf-8") as initTableFile:
+        for _ in range(8 * 16 * 4):
+            line = "0.0 0.0 0.0 0.0 0.0\n"
+            initTableFile.write(line)
+
+    
+    
