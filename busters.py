@@ -269,23 +269,31 @@ class GameState(object):
         return self.data.ghostDistances
 
     def getIdxNearestGhost(self):
-        ghostsDistances = [d for d in self.data.ghostDistances if d is not None]
-        nearestGhost = min(ghostsDistances)
+        # ghostsDistances = [d for d in self.data.ghostDistances if d is not None]
+        newDistances = [d for d in self.data.ghostDistances]
+        for i in range(len(newDistances)):
+            if newDistances[i] is None:
+                newDistances[i] = 99999
+        nearestGhost = min(newDistances)
 
-        return ghostsDistances.index(nearestGhost)
+        return self.data.ghostDistances.index(nearestGhost)
 
     ##### Our Own Implementation for Nearest Ghost #
     def getDistanceNearestGhost(self, idx=None):
         # get the position of the nearest ghost
         # (we check that it is not None to avoid picking the distance to foods)
-        ghostsDistances = [d for d in self.data.ghostDistances if d is not None]
+        newDistances = [d for d in self.data.ghostDistances]
+        for i in range(len(newDistances)):
+            if newDistances[i] is None:
+                newDistances[i] = 99999
+        # ghostsDistances = [d for d in self.data.ghostDistances if d is not None]
         # print(ghostsDistances)
 
         if idx is None:
             # if ghostsDistances:
-            return min(ghostsDistances)
+            return min(newDistances)
         else:
-            return ghostsDistances[idx]
+            return newDistances[idx]
 
         # return 0
     
@@ -411,6 +419,7 @@ class GameState(object):
     def getGhostState( self, agentIndex ):
         if agentIndex == 0:
             raise Exception("Pacman's index passed to getGhostPosition")
+
         return self.data.agentStates[agentIndex]
 
 ############################################################################
@@ -489,7 +498,7 @@ class GhostRules(object):
 
     def applyAction( state, action, ghostIndex):
         legal = GhostRules.getLegalActions( state, ghostIndex )
-        if action not in legal:
+        if action not in legal and action != Directions.STOP:
             raise Exception("Illegal ghost action: " + str(action))
 
         ghostState = state.data.agentStates[ghostIndex]
