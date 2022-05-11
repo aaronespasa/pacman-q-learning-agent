@@ -223,7 +223,6 @@ class PacmanQAgent(QLearningAgent):
 
     def computeReward(self, state):
         "Compute the reward for a given state"
-
         if state.getScore() - self.lastState.getScore() == 199:
             return 30
         
@@ -253,9 +252,12 @@ class PacmanQAgent(QLearningAgent):
         reward = 10
         actual_distance = 0
         last_distance = 1
-        
-        if not self.lastState is None:
-            if not state.isWin():
+
+        if self.lastState:
+            if state.isWin():
+                reward = 30
+            else:
+                reward = self.computeReward(state)
                 # if self.nearestGhostIdx is None or state.getPacmanPosition() in self.lastState.getGhostPositions():
                 #     self.nearestGhostIdx = state.getIdxNearestGhost()
                 # actual_distance = state.getDistanceNearestGhost()
@@ -263,26 +265,19 @@ class PacmanQAgent(QLearningAgent):
                 # else:
                 #     actual_distance = state.getDistanceNearestGhost(self.nearestGhostIdx)
                 #     last_distance = self.lastState.getDistanceNearestGhost(self.nearestGhostIdx)
-            
-            # if state.getPacmanPosition() == self.lastState.getGhostPositions():
-            #     reward = 100
-            # elif self.pacmanPositionLastLast == state.getPacmanPosition(): # avoids loops
-            #     reward = -10
-            # elif actual_distance >= last_distance: # the equal is to avoid the stop
-            #     reward = -50
-                # print("reward -1\n")
-                reward = self.computeReward(state)
-            else:
-                reward = 30
+                # if state.getPacmanPosition() == self.lastState.getGhostPositions():
+                #     reward = 100
+                # elif self.pacmanPositionLastLast == state.getPacmanPosition(): # avoids loops
+                #     reward = -10
+                # elif actual_distance >= last_distance: # the equal is to avoid the stop
+                #     reward = -50
+                    # print("reward -1\n")
             
             # if reward == 100:
             #     print("\nGhost eaten! 🎉")
             
             self.pacmanPositionLastLast = self.lastState.getPacmanPosition()
             self.lastLastAction = self.lastAction
-            # print(reward)
-            # print(f"reward: {reward}")
-            # reward = state.getScore() - self.lastState.getScore()
             self.observeTransition(self.lastState, self.lastAction, state, reward)
 
         return state
@@ -305,19 +300,19 @@ class PacmanQAgent(QLearningAgent):
         """
         num_directions = 4
         ghost_direction = state.getDirectionToNearestGhost(self.nearestGhostIdx)
-        # legalActions = state.getLegalActions()
 
+        legalActions = state.getLegalActions()
         # we assume there will be always at least one legal action
-        # value = 0
-        # for action in legalActions:
-        #     if action == 'North':
-        #         value += 1
-        #     elif action == 'South':
-        #         value += 2
-        #     elif action == 'East':
-        #         value += 4
-        #     elif action == 'West':
-        #         value += 8
+        value = 0
+        for action in legalActions:
+            if action == 'North':
+                value += 1
+            elif action == 'South':
+                value += 2
+            elif action == 'East':
+                value += 4
+            elif action == 'West':
+                value += 8
         
         # directions = {
         #     "N": 1,
@@ -335,9 +330,9 @@ class PacmanQAgent(QLearningAgent):
         #     if livingGhost == True:
         #         living_value += 1
 
-        # return (value - 1) * num_directions + ghost_direction - 1 # 112 + 8 - 1 = 119
+        return (value - 1) * num_directions + ghost_direction - 1 # 112 + 8 - 1 = 119
         
-        return ghost_direction - 1
+        # return ghost_direction - 1
         
     def writeInitQtable(self):
         "Write qtable to disc"
@@ -349,7 +344,8 @@ class PacmanQAgent(QLearningAgent):
         num_living_ghosts = 5
 
         with open("qtable.ini.txt", "w", encoding="utf-8") as initTableFile:
-            for _ in range(num_directions):
+            for _ in range(num_directions * num_legal_actions):
+            # for _ in range(num_directions):
                 line = "0.0 " * (num_actions - 1) + "0.0\n"
                 initTableFile.write(line)
 
