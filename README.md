@@ -1,4 +1,8 @@
 <h1 id="title">Creating a Pac-Man Agent using RL (Q-Learning)</h1>
+
+<p align="center">
+  <img src="https://lh3.googleusercontent.com/H8hhcUas7f9Pi4aMLTQfSTVk1wwE1d_SPYYGldXn9S8GARJis2ED4EpnIfXzfBhTP8KZM64bFnmgowpU3Ct7b7OznwcRakNOM3mB2KRr=s660" alt="pac-man banner" />
+</p>
   
 Welcome to the Pac-Man Agent using Reinforcement Learning (Q-Learning) repository! This project aims to create an intelligent Pac-Man agent using Q-Learning, a popular reinforcement learning technique. The agent will be able to navigate through various Pac-Man mazes, avoiding ghosts and consuming power pellets.
 
